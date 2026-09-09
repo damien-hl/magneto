@@ -1,0 +1,1 @@
+# Magneto — Explorateur de logs
