@@ -1,10 +1,13 @@
 <template>
   <main>
     <header>
-      <a href="/" class="brand">
-        <img width="24" height="24" src="@/assets/images/logo-512x512.png" alt="" />
-        <strong>Magneto</strong>
-        <span>/ log explorer</span>
+      <a href="/" aria-label="Magneto — Log Explorer" class="brand">
+        <span class="brand__logo">
+          <img width="28" height="28" src="@/assets/images/logo-512x512.png" alt="" />
+        </span>
+
+        <span class="brand__name">Magneto</span>
+        <span class="brand__product">Log Explorer</span>
       </a>
       <span class="privacy"><i></i> Vos fichiers restent dans ce navigateur</span>
     </header>
