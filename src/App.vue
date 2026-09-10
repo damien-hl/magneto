@@ -1,5 +1,7 @@
 <template>
-  <div>
-    <h1>Magneto</h1>
-  </div>
+  <main>
+    <section class="intro">
+      <h1>Magneto</h1>
+    </section>
+  </main>
 </template>
