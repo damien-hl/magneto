@@ -31,7 +31,10 @@ jobs:
         uses: pnpm/setup@v2
         with:
           cache: true
-          require-lockfile: true
+          install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Check formatting
         run: pnpm format:check
@@ -60,7 +63,10 @@ jobs:
         uses: pnpm/setup@v2
         with:
           cache: true
-          require-lockfile: true
+          install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
