@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { Level } from './features/logs/types'
 
@@ -10,6 +10,7 @@ import { LEVELS } from './features/logs/constants'
 const baseUrl = import.meta.env.BASE_URL
 
 const picker = useTemplateRef('picker')
+const contextPanel = useTemplateRef('contextPanel')
 
 const text = ref(''),
   levels = ref<Level[]>([]),
@@ -64,6 +65,14 @@ function drop(event: DragEvent) {
 function run() {
   search({ text: text.value, levels: [...levels.value] })
 }
+
+watch(
+  context,
+  () => {
+    contextPanel.value?.querySelector('.context-row--selected')?.scrollIntoView({ block: 'center' })
+  },
+  { flush: 'post' },
+)
 </script>
 
 <template>
@@ -218,7 +227,12 @@ function run() {
         @select="showContext"
       />
 
-      <section v-if="selected !== undefined" aria-label="Contexte de la ligne" class="context">
+      <section
+        v-if="selected !== undefined"
+        ref="contextPanel"
+        aria-label="Contexte de la ligne"
+        class="context"
+      >
         <div class="context__heading">
           <h2>Autour de la ligne {{ (selected + 1).toLocaleString('fr') }}</h2>
           <button @click="closeContext">Fermer</button>

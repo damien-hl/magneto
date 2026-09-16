@@ -33,6 +33,7 @@ test('indexe, filtre, ouvre et ferme le contexte, puis remplace le fichier', asy
   await expect(page.getByRole('region', { name: 'Contexte de la ligne' })).toBeVisible()
   await expect(page.locator('.context-row')).toHaveCount(5)
   await expect(page.locator('.context-row--selected')).toContainText('ERROR Payment timeout')
+  await expect(page.locator('.context-row--selected')).toBeInViewport()
 
   await page.getByRole('button', { name: 'Fermer' }).click()
 
@@ -112,4 +113,27 @@ test('navigue entre les pages et revient au début après une recherche', async 
 
   await expect(page.locator('.log-row').first()).toContainText('INFO message 1')
   await expect(page.getByRole('button', { name: 'Page précédente' })).toBeDisabled()
+})
+
+test('centre la ligne sélectionnée après le chargement du contexte', async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 600 })
+  await page.goto('/')
+  await openLogs(
+    page,
+    Array.from({ length: 11 }, (_, i) => `INFO ligne ${i + 1} ${'détail '.repeat(80)}`).join('\n'),
+  )
+
+  await page.locator('.log-row').nth(5).click()
+  await expect(page.locator('.context-row')).toHaveCount(11)
+
+  const selected = page.locator('.context-row--selected')
+  await expect(selected).toContainText('INFO ligne 6')
+  await expect
+    .poll(() =>
+      selected.evaluate((el) => {
+        const { top, height } = el.getBoundingClientRect()
+        return Math.abs(top + height / 2 - el.ownerDocument.defaultView!.innerHeight / 2)
+      }),
+    )
+    .toBeLessThanOrEqual(1)
 })

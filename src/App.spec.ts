@@ -55,6 +55,7 @@ async function ready(worker: LocalWorker, wrapper: ReturnType<typeof render>) {
 }
 
 beforeEach(() => {
+  HTMLElement.prototype.scrollIntoView = vi.fn<() => void>()
   LocalWorker.instances = []
   vi.stubGlobal('Worker', LocalWorker)
 })
