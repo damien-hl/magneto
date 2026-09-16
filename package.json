@@ -21,6 +21,7 @@
     "prepare": "simple-git-hooks"
   },
   "dependencies": {
+    "@tanstack/vue-virtual": "^3.13.37",
     "vue": "^3.5.42"
   },
   "devDependencies": {

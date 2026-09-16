@@ -3,9 +3,7 @@
   "include": ["env.d.ts", "src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
   "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
   "compilerOptions": {
-    // Extra safety for array and object lookups, but may have false positives.
     "noUncheckedIndexedAccess": true,
-
     // Path mapping for cleaner imports.
     "paths": {
       "@/*": ["./src/*"]

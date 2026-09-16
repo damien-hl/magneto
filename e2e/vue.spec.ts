@@ -1,8 +1,115 @@
 import { test, expect } from '@playwright/test'
 
-// See here how to get started:
-// https://playwright.dev/docs/intro
-test('visits the app root url', async ({ page }) => {
+const content =
+  'INFO démarrage\nERROR Payment timeout\nWARN payment lent\nDEBUG diagnostic\nmessage inconnu\n'
+
+async function openLogs(page: import('@playwright/test').Page, text = content) {
+  await page.getByLabel('Choisir un fichier de logs').setInputFiles({
+    name: 'application.log',
+    mimeType: 'text/plain',
+    buffer: Buffer.from(text),
+  })
+
+  await expect(page.getByText('Prêt à explorer', { exact: true })).toBeVisible()
+}
+
+test('indexe, filtre, ouvre et ferme le contexte, puis remplace le fichier', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('.brand')).toContainText('Magneto')
+  await openLogs(page)
+
+  await expect(page.locator('.log-row')).toHaveCount(5)
+
+  await page.getByRole('checkbox', { name: 'ERROR', exact: true }).check()
+  await page.getByRole('searchbox').fill('PAYMENT timeout')
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click()
+
+  await expect(page.locator('.log-row')).toHaveCount(1)
+  await expect(page.locator('.log-row')).toContainText('ERROR Payment timeout')
+  await expect(page.locator('.level--error')).toHaveCSS('color', 'rgb(189, 75, 65)')
+
+  await page.locator('.log-row').focus()
+  await page.keyboard.press('Enter')
+
+  await expect(page.getByRole('region', { name: 'Contexte de la ligne' })).toBeVisible()
+  await expect(page.locator('.context-row')).toHaveCount(5)
+  await expect(page.locator('.context-row--selected')).toContainText('ERROR Payment timeout')
+
+  await page.getByRole('button', { name: 'Fermer' }).click()
+
+  await expect(page.locator('.context')).toHaveCount(0)
+
+  await page.getByRole('searchbox').fill('introuvable')
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click()
+
+  await expect(page.getByText('Aucune ligne à afficher.')).toBeVisible()
+
+  await openLogs(page, 'INFO remplacement')
+
+  await expect(page.getByRole('checkbox', { name: 'ERROR', exact: true })).not.toBeChecked()
+  await expect(page.getByRole('searchbox')).toHaveValue('')
+  await expect(page.locator('.log-row')).toContainText('INFO remplacement')
+})
+
+test('gère les fichiers vides et les erreurs de format', async ({ page }) => {
+  await page.goto('/')
+  await openLogs(page, '')
+
+  await expect(page.getByText('Aucune ligne à afficher.')).toBeVisible()
+
+  await page.getByLabel('Choisir un fichier de logs').setInputFiles({
+    name: 'utf16.log',
+    mimeType: 'text/plain',
+    buffer: Buffer.from([255, 254, 65, 0]),
+  })
+
+  await expect(page.getByRole('alert')).toContainText('UTF-16')
+  await expect(page.getByRole('button', { name: 'Réindexer le fichier' })).toBeEnabled()
+
+  await openLogs(page)
+
+  await expect(page.locator('.log-row')).toHaveCount(5)
+})
+
+test('reste utilisable sur mobile et avec une grande taille de texte', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/')
+  await page.addStyleTag({ content: 'html { font-size: 20px; }' })
+  await openLogs(page)
+
+  await expect(page.locator('.log-row')).toHaveCount(5)
+
+  const rows = await page.locator('.log-row').evaluateAll((elements) =>
+    elements.map((el) => {
+      const { top, height } = el.getBoundingClientRect()
+      return { top, height }
+    }),
+  )
+
+  expect(rows[1]!.top - rows[0]!.top).toBe(rows[0]!.height)
+  const { scrollWidth, clientWidth } = await page.locator('html').evaluate((el) => ({
+    scrollWidth: el.scrollWidth,
+    clientWidth: el.clientWidth,
+  }))
+
+  // Une barre de défilement verticale peut réduire la largeur disponible.
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth)
+})
+
+test('navigue entre les pages et revient au début après une recherche', async ({ page }) => {
+  await page.goto('/')
+  await openLogs(page, Array.from({ length: 20_010 }, (_, i) => `INFO message ${i + 1}`).join('\n'))
+  await page.getByRole('button', { name: 'Page suivante' }).click()
+
+  await expect(page.locator('.log-row').first()).toContainText('INFO message 20001')
+
+  await page.getByRole('spinbutton', { name: 'Résultat' }).fill('20010')
+  await page.getByRole('button', { name: 'Aller', exact: true }).click()
+
+  await expect(page.locator('.log-row').last()).toContainText('INFO message 20010')
+
+  await page.getByRole('searchbox').fill('message 1')
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click()
+
+  await expect(page.locator('.log-row').first()).toContainText('INFO message 1')
+  await expect(page.getByRole('button', { name: 'Page précédente' })).toBeDisabled()
 })
