@@ -115,11 +115,13 @@ describe('recherche en flux', () => {
     }
 
     expect(matcher.end()).toBe(true)
+
     matcher.part(new TextEncoder().encode('été'))
 
     expect(matcher.end()).toBe(false)
 
     matcher.part(new TextEncoder().encode('timeout'))
+
     expect(matcher.end()).toBe(false)
   })
 

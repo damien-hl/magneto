@@ -49,6 +49,7 @@ async function handle(message: Request) {
       let last = 0
 
       if (message.type === 'open') {
+        engine?.clear()
         engine = new Engine(message.file)
         ready = false
       }
@@ -105,7 +106,7 @@ async function handle(message: Request) {
       } catch (error) {
         if (error instanceof Cancelled) {
           if (phase === 'index') {
-            current.index.clear()
+            current.clear()
 
             engine = undefined
 
@@ -125,7 +126,7 @@ async function handle(message: Request) {
           }
         } else {
           if (phase === 'index') {
-            current.index.clear()
+            current.clear()
             engine = undefined
           } else {
             current.results.clear()

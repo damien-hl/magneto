@@ -137,3 +137,33 @@ test('centre la ligne sélectionnée après le chargement du contexte', async ({
     )
     .toBeLessThanOrEqual(1)
 })
+
+test('annule une indexation en cours puis ouvre un autre fichier', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Choisir un fichier de logs').setInputFiles({
+    name: 'large.log',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('INFO message suffisamment long pour plusieurs blocs\n'.repeat(300_000)),
+  })
+  await page.getByRole('button', { name: 'Annuler', exact: true }).click()
+
+  await expect(page.getByRole('button', { name: 'Réindexer le fichier' })).toBeEnabled()
+
+  await openLogs(page, 'INFO nouveau fichier')
+
+  await expect(page.locator('.log-row')).toHaveCount(1)
+  await expect(page.locator('.log-row')).toContainText('INFO nouveau fichier')
+})
+
+test('remplace le fichier pendant son indexation', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Choisir un fichier de logs').setInputFiles({
+    name: 'large.log',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('INFO première indexation\n'.repeat(500_000)),
+  })
+  await openLogs(page, 'ERROR remplacement immédiat')
+
+  await expect(page.locator('.log-row')).toHaveCount(1)
+  await expect(page.locator('.log-row')).toContainText('ERROR remplacement immédiat')
+})

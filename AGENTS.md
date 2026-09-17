@@ -12,6 +12,7 @@
 - Magneto est un explorateur de logs dont le traitement doit rester dans le navigateur, sans transfert des fichiers ni backend de traitement.
 - L’interface est en français. Préserver la sémantique HTML, les libellés accessibles, la navigation au clavier et les styles de focus.
 - L’indexation et la recherche s’exécutent dans un Web Worker, par blocs de 1 Mio ; les aperçus sont lus à la demande. Préserver ce traitement progressif et la limite de 256 Mio pour l’index et les résultats.
+- L'index reste dans le worker : blocs de 65 536 entrées (offset Float64, longueur Uint32, niveau Uint8). Ne transmettre que les compteurs et aperçus demandés. Une indexation interrompue libère ses blocs ; ouvrir un fichier termine le worker précédent.
 - La liste virtualisée affiche des pages de 20 000 résultats. Garder la hauteur utilisée par le virtualiseur cohérente avec celle des lignes, y compris avec une taille de texte personnalisée.
 - Préserver les modifications existantes de l’utilisateur et limiter les changements au périmètre demandé.
 
@@ -47,5 +48,6 @@
 - `pnpm check` vérifie le formatage, le lint, le typage et les tests unitaires.
 - `pnpm build` vérifie le typage et construit la version de production.
 - `pnpm test:e2e` lance les tests Playwright ; Chromium doit être installé.
+- `pnpm benchmark` mesure la version de production sur 100 Mo, 500 Mo et 1 Go ; protocole dans `benchmarks/README.md`, fichiers et rapports locaux exclus de Git.
 - Adapter les vérifications au changement : formatage pour la documentation seule, contrôles de qualité et compilation pour le code, tests de navigation pour les parcours concernés. Ajouter des tests de comportement utiles lors des changements fonctionnels.
 - Ne pas modifier manuellement les fichiers générés dans `dist/`, les rapports de tests ou `node_modules/`.

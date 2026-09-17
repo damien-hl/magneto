@@ -11,6 +11,11 @@ Validez avec « Rechercher » pour appliquer les filtres. Cliquez sur une ligne 
 L’indexation et la recherche tournent dans un Web Worker, par blocs de 1 Mio. Les résultats
 sont virtualisés par pages de 20 000 lignes. L’annulation d’une recherche conserve les résultats
 partiels ; une indexation annulée doit être relancée.
+L'index contient uniquement les offsets en octets, longueurs et niveaux dans des tableaux
+typés, conservés dans le worker. Seuls la progression et les aperçus demandés reviennent
+au thread principal. Chaque indexation réutilise un préfixe de 8 Kio et un décodeur UTF-8.
+Une annulation ou une erreur libère l'index partiel ; ouvrir un autre fichier termine
+le worker précédent, y compris ses lectures en cours.
 
 ## Limites
 
@@ -28,6 +33,8 @@ Utiliser pnpm et le runtime Node déclarés dans `package.json`.
 - `pnpm dev` : lancer le serveur local.
 - `pnpm check` : formatage, lint, typage et tests unitaires.
 - `pnpm build` : construire le site statique.
+- `pnpm benchmark` : mesurer 100 Mo, 500 Mo et 1 Go dans Chromium (trois essais par taille).
+  Voir le [protocole et les limites des mesures](benchmarks/README.md).
 - `pnpm exec playwright install chromium` : installer le navigateur de test.
 - `pnpm test:e2e` : vérifier les parcours dans Chromium (`CI=1` pour le mode sans fenêtre).
 

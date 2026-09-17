@@ -35,3 +35,6 @@ __screenshots__/
 # Playwright
 test-results/
 playwright-report/
+
+# Local benchmark fixtures and measurements
+benchmarks/local/

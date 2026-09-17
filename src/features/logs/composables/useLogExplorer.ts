@@ -51,17 +51,29 @@ export function useLogExplorer() {
       error.value =
         cause instanceof Error ? cause.message : 'Impossible de démarrer la lecture locale.'
       status.value = 'error'
+
       return
     }
 
     const currentWorker = worker
 
-    worker.onerror = (event) => {
-      if (worker !== currentWorker) return
-      error.value = event.message || 'Le worker a été interrompu.'
+    const failWorker = (message: string) => {
+      if (worker !== currentWorker) {
+        return
+      }
+
+      currentWorker.terminate()
+      worker = undefined
+      error.value = message
       status.value = 'error'
+      lines.value = count.value = memory.value = 0
+      rows.value = []
+      context.value = []
       cancelling.value = false
     }
+
+    worker.onerror = (event) => failWorker(event.message || 'Le worker a été interrompu.')
+    worker.onmessageerror = () => failWorker('Impossible de lire la réponse du worker.')
 
     worker.onmessage = (event: MessageEvent<Response>) => {
       if (worker !== currentWorker) return
@@ -87,10 +99,7 @@ export function useLogExplorer() {
         error.value = m.message
 
         if (m.id === operation) {
-          status.value = 'error'
-          count.value = 0
-          rows.value = []
-          cancelling.value = false
+          failWorker(m.message)
         }
         return
       }
@@ -127,7 +136,11 @@ export function useLogExplorer() {
       }
     }
 
-    post({ type: 'open', id: operation, file: next })
+    try {
+      post({ type: 'open', id: operation, file: next })
+    } catch (cause) {
+      failWorker(cause instanceof Error ? cause.message : 'Impossible de transmettre le fichier.')
+    }
   }
 
   function search(query: Query) {

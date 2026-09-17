@@ -23,24 +23,41 @@ export class Engine {
   }
 
   async build(cancelled: () => boolean, progress: (bytes: number) => void) {
+    this.clear()
     const prefix = new Uint8Array(8192)
+    const decoder = new TextDecoder()
 
     let used = 0
 
-    await scan(this.file, {
-      cancelled,
-      progress,
-      part: (bytes) => {
-        const n = Math.min(bytes.length, prefix.length - used)
-        prefix.set(bytes.subarray(0, n), used)
-        used += n
-      },
-      line: (offset, length) => {
-        const text = new TextDecoder().decode(prefix.subarray(0, used))
-        this.index.add(offset, length, levelCode(this.parser.level(text)))
-        used = 0
-      },
-    })
+    try {
+      await scan(this.file, {
+        cancelled,
+        progress,
+        part: (bytes) => {
+          const n = Math.min(bytes.length, prefix.length - used)
+          if (n) {
+            prefix.set(bytes.subarray(0, n), used)
+          }
+
+          used += n
+        },
+        line: (offset, length) => {
+          const text = decoder.decode(prefix.subarray(0, used))
+          this.index.add(offset, length, levelCode(this.parser.level(text)))
+
+          used = 0
+        },
+      })
+    } catch (error) {
+      this.clear()
+      throw error
+    }
+  }
+
+  clear() {
+    this.results.clear()
+    this.index.clear()
+    this.identity = true
   }
 
   async search(query: Query, cancelled: () => boolean, progress: (bytes: number) => void) {

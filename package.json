@@ -17,6 +17,7 @@
     "test:unit": "vitest",
     "test:unit:run": "vitest run",
     "test:e2e": "playwright test",
+    "benchmark": "pnpm build && node benchmarks/run.mjs",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit:run",
     "prepare": "simple-git-hooks"
   },

@@ -10,6 +10,7 @@ class LocalWorker {
 
   onmessage?: (event: MessageEvent<Response>) => void
   onerror?: (event: ErrorEvent) => void
+  onmessageerror?: () => void
   postMessage = vi.fn<(message: Request) => void>()
   terminate = vi.fn<() => void>()
 
@@ -151,6 +152,56 @@ describe('explorateur', () => {
     expect(wrapper.text()).toContain('Indexation…')
   })
 
+  it('libère le worker et les compteurs après une erreur de communication', async () => {
+    const wrapper = render()
+    const worker = await choose(wrapper)
+
+    worker.send({
+      type: 'progress',
+      id: worker.openId,
+      phase: 'index',
+      bytes: 5,
+      total: 10,
+      lines: 2,
+      matches: 0,
+      memory: 851968,
+    })
+
+    worker.onmessageerror?.()
+    await wrapper.vm.$nextTick()
+
+    expect(worker.terminate).toHaveBeenCalledOnce()
+    expect(wrapper.get('[role="alert"]').text()).toContain('réponse du worker')
+
+    worker.send({ type: 'indexed', id: worker.openId, lines: 3, memory: 100 })
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).not.toContain('Prêt à explorer')
+
+    await wrapper.get('.reset button').trigger('click')
+    await ready(LocalWorker.instances.at(-1)!, wrapper)
+
+    expect(wrapper.text()).toContain('Prêt à explorer')
+  })
+
+  it('libère le worker si la transmission du fichier échoue', async () => {
+    // Simulate a synchronous structured-clone failure at the worker boundary.
+    vi.stubGlobal(
+      'Worker',
+      class extends LocalWorker {
+        override postMessage = vi.fn<(message: Request) => void>(() => {
+          throw new Error('Copie impossible')
+        })
+      },
+    )
+
+    const wrapper = render()
+    await choose(wrapper)
+
+    expect(LocalWorker.instances.at(-1)!.terminate).toHaveBeenCalledOnce()
+    expect(wrapper.get('[role="alert"]').text()).toBe('Copie impossible')
+  })
+
   it('affiche une erreur si le worker ne peut pas démarrer', async () => {
     vi.stubGlobal(
       'Worker',
@@ -160,8 +211,8 @@ describe('explorateur', () => {
         }
       },
     )
-    const wrapper = render()
 
+    const wrapper = render()
     await choose(wrapper)
 
     expect(wrapper.get('[role="alert"]').text()).toBe('Worker indisponible')
